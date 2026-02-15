@@ -10,7 +10,6 @@ class Subject(models.Model):
     ]
 
     name = models.CharField(max_length=200)
-    name_hi = models.CharField(max_length=200, verbose_name='Name (Hindi)')
     slug = models.SlugField(unique=True, max_length=200)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     icon = models.CharField(max_length=100)
@@ -29,7 +28,6 @@ class Chapter(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='chapters')
     number = models.IntegerField()
     title = models.CharField(max_length=300)
-    title_hi = models.CharField(max_length=300, verbose_name='Title (Hindi)')
     code = models.CharField(max_length=50, unique=True, help_text='e.g., POL-SRC')
     is_active = models.BooleanField(default=True)
 
@@ -64,14 +62,12 @@ class Question(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='questions')
     question_id = models.CharField(max_length=50, unique=True, help_text='e.g., POL-SRC-001')
     stem = models.TextField(verbose_name='Question Text')
-    stem_hi = models.TextField(blank=True, verbose_name='Question Text (Hindi)')
     option_a = models.CharField(max_length=500)
     option_b = models.CharField(max_length=500)
     option_c = models.CharField(max_length=500)
     option_d = models.CharField(max_length=500)
     correct_answer = models.CharField(max_length=1, choices=ANSWER_CHOICES)
     explanation = models.TextField()
-    explanation_hi = models.TextField(blank=True, verbose_name='Explanation (Hindi)')
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES)
     exam_source = models.CharField(max_length=200)
     year = models.IntegerField()
@@ -91,9 +87,7 @@ class Question(models.Model):
 
 class KeyTerm(models.Model):
     term = models.CharField(max_length=200)
-    term_hi = models.CharField(max_length=200, verbose_name='Term (Hindi)')
     definition = models.TextField()
-    definition_hi = models.TextField(verbose_name='Definition (Hindi)')
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='key_terms')
     related_questions = models.ManyToManyField(Question, blank=True, related_name='key_terms')
 
