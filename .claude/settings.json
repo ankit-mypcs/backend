@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install django-import-export)",
+      "Bash(pip install:*)",
+      "Bash(curl -s http://127.0.0.1:8000/api/stats/)",
+      "Bash(curl -s http://127.0.0.1:8000/api/subjects/)",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/questions/?page=1\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/questions/893/\")",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/questions/893/check_answer/ -H \"Content-Type: application/json\" -d '{\"\"\"\"answer\"\"\"\": \"\"\"\"A\"\"\"\"}')",
+      "Bash(curl -s -X POST http://127.0.0.1:8000/api/questions/893/check_answer/ -H \"Content-Type: application/json\" -d '{\"\"\"\"answer\"\"\"\": \"\"\"\"C\"\"\"\"}')",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/questions/random_set/?count=5\")",
+      "Bash(taskkill //F //IM python.exe)",
+      "Read(//c/Users/antri/**)",
+      "Bash(npx create-next-app@latest mypcs-frontend --typescript --tailwind --eslint --app --src-dir --no-import-alias --no-turbopack)",
+      "Bash(npm install:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\antri\\mypcs-frontend\\src\\app",
+      "C:\\Users\\antri\\mypcs-frontend\\src"
+    ]
+  }
+}

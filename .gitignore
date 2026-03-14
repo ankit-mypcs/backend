@@ -16,6 +16,14 @@ db.sqlite3
 .vscode/
 .idea/
 
+# Data files (imported separately)
+*.xlsx
+*.csv
+
+# Media and static
+media/
+staticfiles/
+
 # OS
 Thumbs.db
 Desktop.ini
