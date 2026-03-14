@@ -532,6 +532,12 @@ Next.js 16 ships with Tailwind v4 which uses CSS-based config (`@theme` blocks i
 | src/app/practice/page.tsx | Created — interactive practice page |
 | src/app/page.tsx | Modified — homepage subject cards now clickable `<a>` links to /practice |
 
+### I-04: Pushed both projects to GitHub
+- Backend: https://github.com/ankit-mypcs/backend (commit 7767cab)
+- Frontend: https://github.com/ankit-mypcs/frontend (commit eb1446a)
+- Updated .gitignore: added *.xlsx, *.csv, media/, staticfiles/
+- Credential manager switched from ankit-chawla03 to ankit-mypcs
+
 ### Next Tasks
 | # | Task | Status |
 |---|---|---|

@@ -9,6 +9,7 @@ Owner: Ankit Chawla (beginner coder, learning as he builds)
 - Status: REST API live + Next.js frontend connected, 10,673 prelims questions
 - Database: PostgreSQL (mypcs_db)
 - Django project: C:\Users\antri\mypcs280226
+- GitHub: https://github.com/ankit-mypcs/backend (backend), https://github.com/ankit-mypcs/frontend (frontend)
 - Virtual env: venv (always activate first)
 - Settings: mypcs_project/settings.py
 - Apps: content (15 models), tracker (2 models: BuildTask, BuildSubTask)

@@ -1,3 +1,4 @@
+import os
 
 import environ
 env = environ.Env()
@@ -29,7 +30,8 @@ SECRET_KEY =  env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = []
+# WHY: Railway sets ALLOWED_HOSTS via env var. Falls back to localhost for dev.
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WHY: Serves static files without nginx on Railway
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -125,6 +128,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# WHY: Railway needs a directory to collect static files into. WhiteNoise serves from here.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WHY: WhiteNoise compresses and caches static files for production performance.
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # ── Django REST Framework ──
 REST_FRAMEWORK = {
@@ -138,8 +150,12 @@ REST_FRAMEWORK = {
 }
 
 # ── CORS ──
+# WHY: Allow local dev + production Vercel frontend to call our API.
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://frontend-orcin-sigma-77.vercel.app',
 ]
+# WHY: Allow Vercel preview URLs during development. Set CORS_ALLOW_ALL=True on Railway if needed.
+CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL', 'False') == 'True'
 
