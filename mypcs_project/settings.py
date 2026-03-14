@@ -1,9 +1,5 @@
 import os
 
-import environ
-env = environ.Env()
-environ.Env.read_env('.env')
-
 """
 Django settings for mypcs_project project.
 
@@ -26,9 +22,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY =  env('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-insecure-key-change-in-production')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=False)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # WHY: Railway sets ALLOWED_HOSTS via env var. Falls back to localhost for dev.
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
