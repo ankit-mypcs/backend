@@ -87,10 +87,21 @@ WSGI_APPLICATION = 'mypcs_project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# WHY: Railway provides DATABASE_URL at runtime. Falls back to SQLite for local dev without .env.
+import dj_database_url
 
-DATABASES = {
-    'default': env.db('DATABASE_URL')
-}
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(default=DATABASE_URL)
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
