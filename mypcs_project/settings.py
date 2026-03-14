@@ -87,13 +87,12 @@ WSGI_APPLICATION = 'mypcs_project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# WHY: Railway provides DATABASE_URL at runtime. Falls back to SQLite for local dev without .env.
 import dj_database_url
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
-if DATABASE_URL:
+_db_url = os.environ.get('DATABASE_URL', '')
+if _db_url:
     DATABASES = {
-        'default': dj_database_url.config(default=DATABASE_URL)
+        'default': dj_database_url.config(default=_db_url)
     }
 else:
     DATABASES = {
