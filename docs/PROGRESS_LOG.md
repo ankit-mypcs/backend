@@ -798,10 +798,22 @@ mypcs280226/
     └── CLAUDE.md
 ```
 
+---
+
+## Session 12 — 17-Mar-2026 (Ch5 + Ch6 Uploads)
+
+### T92a: Upload Chalcolithic Age (Ch5)
+- Dry run: 235 rows across 10 sheets — passed
+- Real upload: 235 content records created
+- Breakdown: Timeline:15, Concepts:9, Sites:33, KeyFacts:40, State_Specific:43, Society:31, Images:13, Terms:17, ExamAnalysis:17, Exercises:17
+- Chapter: chalcolithic-age (number 5, unit: prehistoric-india)
+- Running totals: 2 chapters, 274 facts, 98 sites
+
 ### Next Tasks
 | # | Task | Status |
 |---|---|---|
-| T92 | Upload Chalcolithic (Ch5) and Harappan (Ch6) chapters | Pending |
+| T92a | Upload Chalcolithic (Ch5) | Done |
+| T92b | Upload Harappan (Ch6) | Pending |
 | T93 | Build frontend chapter view pages | Pending |
 | T94 | Build Mains PYQ upload pipeline | Pending |
 | T95 | Deploy to Railway | Pending |

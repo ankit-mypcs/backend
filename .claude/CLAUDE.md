@@ -79,11 +79,11 @@ Subject (History)
 - [x] content_subject — 1 (History)
 - [x] content_part — 1 (Ancient India)
 - [x] content_unit — 2 (Prehistoric India, Proto-Historic & Vedic)
-- [x] content_chapter — 1 (Stone Age) — 2 more ready to upload (Chalcolithic, Harappan)
+- [x] content_chapter — 2 (Stone Age, Chalcolithic Age) — 1 more ready to upload (Harappan)
 - [x] content_topic — 7 (Stone Age topics)
 - [x] content_subtopic — 25 (Stone Age subtopics)
-- [x] content_fact — 160 (KeyFacts:47, State_Specific:68, Society:45)
-- [x] content_site — 65
+- [x] content_fact — 274 (Stone Age:160, Chalcolithic:114)
+- [x] content_site — 98 (Stone Age:65, Chalcolithic:33)
 - [x] content_timeline_event — 29
 - [x] content_glossary_term — 30
 - [x] content_exam_intel_entry — 20
@@ -100,12 +100,12 @@ Subject (History)
 
 ### DATA FILES (in project)
 - data/chapters/HIS_StoneAge_Ch4.xlsx — uploaded
-- data/chapters/HIS_Chalcolithic_Ch5.xlsx — ready to upload
+- data/chapters/HIS_Chalcolithic_Ch5.xlsx — uploaded
 - data/chapters/HIS_HarappanCiv_Ch6.xlsx — ready to upload
 - data/PYQ/UPPCS_PYQ_Ancient_History_v2.xlsx — uploaded (1,178 PYQs)
 
 ### NEXT STEPS
-1. Upload Chalcolithic (Ch5) and Harappan (Ch6) chapters
+1. Upload Harappan (Ch6) chapter (XLSX ready, deferred for now)
 2. Build frontend chapter view + question practice pages
 3. Build Mains PYQ upload pipeline
 4. Deploy to Railway
