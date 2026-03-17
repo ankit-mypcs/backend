@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()  # reads .env file so os.environ.get() works locally
 
 """
 Django settings for mypcs_project project.

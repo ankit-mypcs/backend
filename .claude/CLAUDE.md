@@ -5,85 +5,112 @@
 mypcs.in — UPPCS exam prep platform. Django backend + PostgreSQL.
 Owner: Ankit Chawla (beginner coder, learning as he builds)
 
-### CURRENT STATE (last updated: 15-Mar-2026)
-- Status: REST API live + Next.js frontend connected, 10,673 prelims questions
-- Database: PostgreSQL (mypcs_db)
+### CURRENT STATE (last updated: 17-Mar-2026)
+- Status: Schema v2 deployed — 27 models, Ancient History content pipeline live
+- Deployment: Gunicorn + WhiteNoise + dj-database-url, Railway config (Procfile, railway.json, runtime.txt)
+- Env vars: ALL use os.environ.get() — django-environ fully removed from settings.py
+- Database: PostgreSQL (mypcs_db) — WIPED and rebuilt on 17-Mar-2026
 - Django project: C:\Users\antri\mypcs280226
 - GitHub: https://github.com/ankit-mypcs/backend (backend), https://github.com/ankit-mypcs/frontend (frontend)
 - Virtual env: venv (always activate first)
 - Settings: mypcs_project/settings.py
-- Apps: content (15 models), tracker (2 models: BuildTask, BuildSubTask)
-- Content models (15): Subject, Unit, Chapter, Topic, SubTopic, MicroTopic, Exam, ExamSession, Paper, Part, Competency, MainsPYQ, PrelimsPYQ, QuestionAppearance, ExamSource
-- Syllabus hierarchy: Subject > Unit > Chapter > Topic > SubTopic > MicroTopic
-- ExamSource (lookup table) — normalizes exam names (UPPCS, MPPCS, etc.)
-- Paper hierarchy: Paper > Part
-- MainsPYQ (subjective mains) — FKs: ExamSession, Paper, Part, Subject, Unit, Chapter, Topic, Competency + fact_code, tag_code
-- PrelimsPYQ (MCQ prelims) — FKs: ExamSession(null), Paper(null), Subject(null), Unit, Chapter, Topic + repeat_count
-  - option_a-d: max_length=1000, review_status: max_length=25
-  - review_status choices: draft, ok, needs_review, parse_error_no_options, reviewed, approved
-- QuestionAppearance (bridge table) — FK: PrelimsPYQ (CASCADE) + UniqueConstraint(question, year, exam_source)
-- django-import-export 4.4.0 installed — PrelimsPYQ has Import/Export in admin
-- Management command: import_prelims_pyq (supports flat + multi-tab Excel formats)
-  - Usage: python manage.py import_prelims_pyq file.xlsx --dry-run --batch-id POL --subject Polity
-  - Imported: Polity (2,484), History (4,697), Geography (3,492) = 10,673 total
-- REST API: djangorestframework 3.16.1 + django-cors-headers 4.9.0 + django-filter 25.2
-  - Endpoints: /api/subjects/, /api/chapters/, /api/questions/, /api/stats/
-  - Extra actions: check_answer (POST), random_set, by_chapter, chapters/{id}/topics/
-  - Files: content/serializers.py, content/api_views.py, content/api_urls.py
-  - Pagination: 20 per page, filterable by subject/difficulty/year/exam_source
-- Content migrations: 0001 through 0015 applied
-- Tracker migrations: 0001 applied
-- Tracker data: 30 tasks (S2: 13 done, S3: 17), 4 subtasks
-- Frontend: Next.js 16 + Tailwind v4 at C:\Users\antri\mypcs-frontend
-  - Stack: TypeScript, App Router, src/ dir, next-pwa
-  - Tricolor design tokens: saffron/green/navy + ivory/cream/sandstone + ink family
-  - Fonts: Outfit (UI), Lexend (reading), Noto Sans Devanagari (Hindi)
-  - Typed API client: src/lib/api.ts (all endpoints typed)
-  - T72 DONE: Full homepage with Nav, Footer, hero, stats, problem, features, subjects, pricing, CTA
-  - T73+S3-01 DONE: /subjects listing page + /practice interactive question page
-  - Components: Nav.tsx, Footer.tsx, page.tsx (homepage with 9 sections)
-  - Pages: /subjects (server-side, lists all subjects with PYQ counts), /practice?subject_id=X&subject_name=Y (client-side, UPPCS marking +2/-0.66)
-  - Dev: npm run dev on :3000, Django on :8000
-  - .env.local: NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+- Apps: content (27 models), tracker (2 models: BuildTask, BuildSubTask)
 
-### CONTENT HIERARCHY (8 levels)
-Level 1 — SUBJECT (table) "History" ~11 rows - DONE
-Level 2 — UNIT (table) "Ancient History" ~51 rows - DONE
-Level 3 — PART (table) 0 rows - DONE (FK to Paper, MainsPYQ has optional FK)
-Level 4 — CHAPTER (table) 1 row - T43: Stone Age seeded (FK to Unit)
-Level 5 — TOPIC (table) 0 rows - DONE (model created, FK to Chapter, auto-slug save())
-Level 6 — SUB-TOPIC (table) 0 rows - DONE (model created, FK to Topic)
-Level 7 — SUB-TOPIC text (text field on MainsPYQ — sub_topic_text)
-Level 8 — MICRO-TOPIC text (text field on MainsPYQ — micro_topic_text)
+### CONTENT APP — 27 MODELS
+**Reference**: State, SourceBook
+**Taxonomy**: Subject → Part → Unit → Chapter → Topic → SubTopic → MicroTopic
+**Content** (one per XLSX sheet): Fact, Site, TimelineEvent, GlossaryTerm, ExamIntelEntry, ComparisonMatrix, Visual, Exercise
+**Exam**: Exam, ExamSession, Paper, PaperSection (renamed from old Part), Competency
+**Questions**: PrelimsPYQ, MainsPYQ
+**Tracking**: QuestionAppearance, ExamSource, FactQuestionLink, SiteQuestionLink
 
-### TABLES STATUS
-- [x] content_subject — 11 subjects loaded
-- [x] content_unit — 51 units loaded
-- [x] content_exam — 2 exams (UPPCS Mains + UPPCS Prelims)
-- [x] content_exam_session — 13 sessions (7 mains 2018-2024 + 6 prelims 2004-2016)
-- [x] content_paper — 10 papers (PRE1, PRE2, HINDI, ESSAY, GS1-GS6)
-- [x] content_competency — 37 competencies
-- [ ] content_mains_pyq — 1 test question (639 ready to import)
-- [x] content_chapter — 1 row (Stone Age under History > Ancient & Medieval India)
-- [x] content_topic — 0 rows (cleared, ready for proper import)
-- [x] content_subtopic — 0 rows (cleared, ready for proper import)
-- [x] content_part — 0 rows (ready for data)
-- [x] content_prelims_pyq — 10,673 rows (Polity 2,484 + History 4,697 + Geography 3,492)
-- [x] content_question_appearance — 10,127 rows
-- [x] content_microtopic — 0 rows (cleared, ready for proper import)
-- [x] content_exam_source — 0 rows (cleared, ready for proper import)
-- [x] Import prelims PYQs — DONE (10,673 from 3 GC cleaned Excel files)
-- [x] tracker_task — 30 tasks seeded (S2: 13 done, S3: 6 done + 11 pending)
-- [x] tracker_subtask — 4 subtasks (T28B, T28C, T29B done, T29C)
+### KEY CHANGES FROM OLD SCHEMA (v1 → v2)
+- Old Part (FK to Paper) renamed → PaperSection
+- New Part added for taxonomy: Subject → Part → Unit → Chapter
+- Unit now FK to Part (was FK to Subject)
+- 10 new content models added (Fact, Site, TimelineEvent, GlossaryTerm, ExamIntelEntry, ComparisonMatrix, Visual, Exercise, State, SourceBook)
+- FactQuestionLink, SiteQuestionLink for citation pipeline
+- Single fresh migration: 0001_initial.py (old 0001-0015 deleted)
+
+### REST API
+- djangorestframework 3.16.1 + django-cors-headers 4.9.0
+- Files: content/serializers.py, content/views.py, content/urls.py
+- URL config: path('api/', include('content.urls')) in mypcs_project/urls.py
+
+**Endpoints**:
+- /api/stats/ — dashboard stats
+- /api/chapters/ — list (with fact_count, site_count, pyq_count)
+- /api/chapters/{slug}/ — detail with nested topics + subtopics
+- /api/chapters/{slug}/facts/ — filterable by ?sheet= and ?topic=
+- /api/chapters/{slug}/sites/
+- /api/chapters/{slug}/timeline/
+- /api/chapters/{slug}/terms/
+- /api/chapters/{slug}/exam-intel/
+- /api/chapters/{slug}/concepts/
+- /api/chapters/{slug}/visuals/
+- /api/chapters/{slug}/exercises/
+- /api/questions/ — filterable by ?chapter=, ?year=, ?difficulty=, ?status=
+- /api/questions/{id}/ — full detail with options + answer
+
+### MANAGEMENT COMMANDS
+- upload_chapter: Reads chapter XLSX (10 sheets) → creates all content records
+  - Usage: python manage.py upload_chapter path.xlsx --chapter-slug X --chapter-name "Y" --chapter-number N --unit-slug Z [--dry-run]
+  - Header-based column detection (handles Ch5 inconsistencies)
+- upload_prelims: Reads PYQ XLSX (MASTER sheet, row 2 headers, row 3+ data)
+  - Usage: python manage.py upload_prelims path.xlsx [--sheet MASTER] [--dry-run]
+  - Imports all rows; flags missing-options as review_status='parse_error_no_options'
+  - Fuzzy chapter matching (strips leading "The " from names)
+- import_prelims_pyq: OLD command (from v1), still present but superseded
+- load_subjects_units: OLD command (from v1), still present but superseded
+
+### CONTENT HIERARCHY
+```
+Subject (History)
+  └─ Part (Ancient India)
+       └─ Unit (Prehistoric India, Proto-Historic & Vedic)
+            └─ Chapter (Stone Age, Chalcolithic Age, Harappan Civilisation)
+                 └─ Topic (from XLSX 'Topic' column)
+                      └─ SubTopic (from XLSX 'MicroTopic' column)
+                           └─ MicroTopic (finest grain, for PYQ AI linking)
+```
+
+### TABLES STATUS (17-Mar-2026)
+- [x] content_state — 1 (UP)
+- [x] content_subject — 1 (History)
+- [x] content_part — 1 (Ancient India)
+- [x] content_unit — 2 (Prehistoric India, Proto-Historic & Vedic)
+- [x] content_chapter — 1 (Stone Age) — 2 more ready to upload (Chalcolithic, Harappan)
+- [x] content_topic — 7 (Stone Age topics)
+- [x] content_subtopic — 25 (Stone Age subtopics)
+- [x] content_fact — 160 (KeyFacts:47, State_Specific:68, Society:45)
+- [x] content_site — 65
+- [x] content_timeline_event — 29
+- [x] content_glossary_term — 30
+- [x] content_exam_intel_entry — 20
+- [x] content_comparison_matrix — 1
+- [x] content_visual — 25
+- [x] content_exercise — 26
+- [x] content_prelims_pyq — 1,178 (243 complete, 935 no options yet)
+- [ ] content_mains_pyq — 0 (pipeline not built yet)
+- [ ] content_exam — 0 (need to re-seed)
+- [ ] content_exam_session — 0 (need to re-seed)
+- [ ] content_paper — 0 (need to re-seed)
+- [x] tracker_task — 30 tasks (from v1, still intact)
+- [x] tracker_subtask — 4 subtasks
+
+### DATA FILES (in project)
+- data/chapters/HIS_StoneAge_Ch4.xlsx — uploaded
+- data/chapters/HIS_Chalcolithic_Ch5.xlsx — ready to upload
+- data/chapters/HIS_HarappanCiv_Ch6.xlsx — ready to upload
+- data/PYQ/UPPCS_PYQ_Ancient_History_v2.xlsx — uploaded (1,178 PYQs)
 
 ### NEXT STEPS
-1. Populate Chapter, Topic, SubTopic, Part tables with data
-2. Import 639 Mains PYQs (MainsPYQ now has topic FK + fact_code + tag_code)
-3. Import polity_import_ready.xlsx (560 flat-format Polity questions) if needed
-4. Build practice page with question cards + answer checking
-5. Add authentication/user model for practice tracking
-4. Build practice page with question cards + answer checking
-5. Add authentication/user model for practice tracking
+1. Upload Chalcolithic (Ch5) and Harappan (Ch6) chapters
+2. Build frontend chapter view + question practice pages
+3. Build Mains PYQ upload pipeline
+4. Deploy to Railway
+5. Remaining 11 Ancient History chapters (XLSX content creation)
+6. Add authentication/user model for practice tracking
 
 ### RULES
 - Always activate venv before running Python
@@ -91,6 +118,8 @@ Level 8 — MICRO-TOPIC text (text field on MainsPYQ — micro_topic_text)
 - Always show migration files before applying
 - Explain every change — Ankit is learning
 - Never implement Phase 2/3/4 features unless asked
+- Single content app — all models in content/
+- Header-based XLSX parsing — never assume column positions
 
 ### STARTUP CHECKLIST (run every new session)
 1. python manage.py check

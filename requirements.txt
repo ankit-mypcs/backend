@@ -12,6 +12,7 @@ gunicorn==25.1.0
 openpyxl==3.1.5
 packaging==26.0
 psycopg==3.3.3
+python-dotenv==1.2.2
 psycopg-binary==3.3.3
 psycopg2-binary==2.9.11
 sqlparse==0.5.5

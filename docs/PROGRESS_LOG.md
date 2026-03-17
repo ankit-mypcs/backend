@@ -538,14 +538,88 @@ Next.js 16 ships with Tailwind v4 which uses CSS-based config (`@theme` blocks i
 - Updated .gitignore: added *.xlsx, *.csv, media/, staticfiles/
 - Credential manager switched from ankit-chawla03 to ankit-mypcs
 
+### I-04b: Production deployment config (commit fdb6afc)
+- Installed: gunicorn 25.1.0, whitenoise 6.12.0, dj-database-url 3.1.2, psycopg2-binary 2.9.11
+- Created requirements.txt (20 packages)
+- Created Procfile: `gunicorn mypcs_project.wsgi --bind 0.0.0.0:$PORT`
+- Created runtime.txt: `python-3.12` (Railway doesn't support 3.14 yet)
+- Created railway.json: Nixpacks builder, migrate-on-deploy, restart on failure
+- Updated settings.py:
+  - WhiteNoise middleware (after SecurityMiddleware) — serves static files without nginx
+  - STATIC_ROOT = staticfiles/ + CompressedManifestStaticFilesStorage
+  - ALLOWED_HOSTS from env var (falls back to localhost)
+  - CORS: added Vercel production URL + CORS_ALLOW_ALL toggle via env
+- collectstatic: 170 files → staticfiles/ (gitignored)
+
+### Railway env vars needed
+| Variable | Example | Notes |
+|---|---|---|
+| DATABASE_URL | postgres://user:pass@host:5432/db | Railway provides this |
+| SECRET_KEY | random-string-here | Generate a new one |
+| DEBUG | False | Must be False in production |
+| ALLOWED_HOSTS | your-app.railway.app | Comma-separated |
+| CORS_ALLOW_ALL | True | Optional, for Vercel previews |
+
+### Fix: DATABASE_URL cleanup (commit 3269f58)
+- Renamed `DATABASE_URL` variable to `_db_url` to avoid shadowing env key name
+- Removed old WHY comment (redundant)
+- Confirmed: zero `env.db` or `env('DATABASE_URL')` calls remain
+- Only reference: `_db_url = os.environ.get('DATABASE_URL', '')` with SQLite fallback
+- `python manage.py check` passes clean
+
+### Fix: Remove django-environ completely (commit db0e8ad)
+- Removed `import environ`, `env = environ.Env()`, `environ.Env.read_env('.env')`
+- Replaced `env('SECRET_KEY')` → `os.environ.get('SECRET_KEY', 'dev-insecure-key-change-in-production')`
+- Replaced `env.bool('DEBUG', default=False)` → `os.environ.get('DEBUG', 'False') == 'True'`
+- All 5 env var reads now use `os.environ.get()` with safe defaults
+- Zero `env(` calls remain in settings.py — grep confirmed
+- `python manage.py check` passes clean
+- **Why**: django-environ crashes on Railway when .env file doesn't exist during build
+
+---
+
+## Session 10 — 15-Mar-2026 (v7 Homepage)
+
+### Tasks Completed
+| # | Task | Status |
+|---|---|---|
+| T76 | Convert homepage to v7 dark design with saffron accent | Done |
+
+### v7 Homepage Design (commit 7b41e86)
+- **Theme**: Dark #0A0A0F background, saffron #E07A2F accent
+- **Fonts**: Satoshi (Fontshare, UI headings), JetBrains Mono (Google, stats/numbers)
+- **CSS**: homepage.module.css (CSS modules, ~580 lines)
+- **Component**: 'use client' with IntersectionObserver scroll reveals
+- **Tricolor**: 2px stripe fixed at top (saffron 33% / white 33% / green 33%)
+- **Footer**: 36px tricolor micro-line
+- **CTA divider**: gradient saffron → green
+- **Nav**: Glass effect (backdrop-blur + rgba bg), saffron hover on links
+- **Hero**: Gradient mesh + grid overlay, saffron glow CTA button
+- **Features**: Bento grid cards, saffron top accent, hover lift + shadow
+- **Stats**: JetBrains Mono numbers in saffron
+- **Badges**: Free = green-soft (#34D399), Premium = saffron (#E07A2F)
+- **Pricing**: Premium card has saffron border, free has subtle border
+- **Scroll reveals**: fade-up with cubic-bezier(0.4,0,0.2,1), 0.6s
+- **Color system**: --bg, --bg-surface, --bg-elevated, --text-1/2/3/4, --saffron, --green-soft
+- **Old Nav.tsx + Footer.tsx**: Still exist for /subjects and /practice pages (light theme)
+
+### Files Created/Modified
+| File | Action |
+|---|---|
+| src/app/homepage.module.css | Created — all v7 dark theme styles (~580 lines) |
+| src/app/page.tsx | Rewritten — v7 dark homepage, 'use client', scroll reveals |
+| src/app/layout.tsx | Modified — added Satoshi (Fontshare), JetBrains Mono, dark body bg |
+
 ### Next Tasks
 | # | Task | Status |
 |---|---|---|
-| T52 | Populate remaining Chapters, Topics, SubTopics, Parts | Pending |
+| T52 | Populate remaining Chapters, Topics, SubTopics, Parts | Done (via S11) |
 | T53 | Import 639 Mains PYQs | Pending |
 | T75 | Add authentication/user model for practice tracking | Pending |
+| T77 | Update /subjects and /practice pages to match dark theme | Pending |
 
 ### Architecture (updated)
+### Architecture (S10)
 ```
 mypcs280226/
 ├── manage.py
@@ -596,10 +670,139 @@ mypcs-frontend/               (C:\Users\antri\mypcs-frontend)
     │   └── Footer.tsx         (4-column footer, tricolor accent)
     └── app/
         ├── globals.css        (Tailwind v4 @theme design tokens)
-        ├── layout.tsx         (root layout, fonts: Outfit/Lexend/Noto)
-        ├── page.tsx           (full homepage: 9 sections, live API data)
+        ├── layout.tsx         (root layout, fonts: Satoshi/JetBrains Mono/Outfit/Lexend/Noto)
+        ├── homepage.module.css (v7 dark theme styles, CSS modules)
+        ├── page.tsx           (v7 dark homepage, 'use client', scroll reveals)
         ├── subjects/
         │   └── page.tsx       (subjects listing, server-side)
         └── practice/
             └── page.tsx       (interactive practice, client-side)
 ```
+
+---
+
+## Session 11 — 17-Mar-2026 (Schema v2 + Ancient History Pipeline)
+
+### Summary
+Complete schema rebuild from 15 models to 27 models. Wiped all old data (10,673 prelims).
+Built XLSX-driven content pipeline. Deployed Stone Age chapter end-to-end with 13 working API endpoints.
+Work split: Cowork Claude (strategy/blueprinting/file creation) → VS Code Claude (execution against production).
+
+### Tasks Completed
+| # | Task | Status |
+|---|---|---|
+| T78 | Design production models.py — 27 models, single content app, no Hindi | Done |
+| T79 | Create upload_chapter.py — header-based XLSX parser, all 10 sheets | Done |
+| T80 | Create upload_prelims.py — PYQ XLSX parser, row 2 headers, fuzzy chapter matching | Done |
+| T81 | Sandbox test — full pipeline: migrate, seed, upload, verify, API | Done |
+| T82 | Delete old migrations 0001-0015, create fresh 0001_initial.py | Done |
+| T83 | Drop all old content_ tables, apply fresh migration (30 tables) | Done |
+| T84 | Seed taxonomy: History → Ancient India → 2 Units + UP State | Done |
+| T85 | Upload Stone Age chapter: 356 content records across 10 sheets | Done |
+| T86 | Upload 1,178 Prelims PYQs (243 complete + 935 flagged no-options) | Done |
+| T87 | Deploy serializers.py, views.py, urls.py — 13 API endpoints | Done |
+| T88 | Deploy admin.py — custom admin classes for all 27 models | Done |
+| T89 | Test all API endpoints — all passing | Done |
+| T90 | Create COWORK_SYSTEM.md — persistent role/context/architecture doc | Done |
+| T91 | Update CLAUDE.md + PROGRESS_LOG.md | Done |
+
+### Schema Changes (v1 → v2)
+- Old Part (FK to Paper) renamed → PaperSection
+- New Part for taxonomy: Subject → Part → Unit → Chapter
+- Unit FK changed: Subject → Part
+- 12 new content models: State, SourceBook, Fact, Site, TimelineEvent, GlossaryTerm, ExamIntelEntry, ComparisonMatrix, Visual, Exercise, FactQuestionLink, SiteQuestionLink
+- Fresh migration 0001_initial.py (old 0001-0015 deleted)
+
+### Files Created/Replaced
+| File | Action |
+|---|---|
+| content/models.py | Replaced — 27 models (was 15) |
+| content/serializers.py | Replaced — new serializers for all content + PYQ |
+| content/views.py | Replaced — ChapterViewSet (8 sub-endpoints), PrelimsViewSet, stats_view |
+| content/urls.py | Created — DRF router wiring |
+| content/admin.py | Replaced — custom admin for all 27 models |
+| content/management/commands/upload_chapter.py | Created — XLSX 10-sheet parser |
+| content/management/commands/upload_prelims.py | Created — PYQ XLSX parser |
+| data/chapters/HIS_StoneAge_Ch4.xlsx | Copied — ready |
+| data/chapters/HIS_Chalcolithic_Ch5.xlsx | Copied — ready |
+| data/chapters/HIS_HarappanCiv_Ch6.xlsx | Copied — ready |
+| data/PYQ/UPPCS_PYQ_Ancient_History_v2.xlsx | Copied — uploaded |
+
+### API Endpoints (13 total, all tested)
+| Method | URL | Response |
+|---|---|---|
+| GET | /api/stats/ | chapters:1, facts:160, prelims_pyqs:1178, prelims_complete:243 |
+| GET | /api/chapters/ | 1 chapter with counts |
+| GET | /api/chapters/stone-age/ | Detail with 7 topics + subtopics |
+| GET | /api/chapters/stone-age/facts/ | 160 facts |
+| GET | /api/chapters/stone-age/sites/ | 65 sites |
+| GET | /api/chapters/stone-age/timeline/ | 29 events |
+| GET | /api/chapters/stone-age/terms/ | 30 terms |
+| GET | /api/chapters/stone-age/exam-intel/ | 20 entries |
+| GET | /api/chapters/stone-age/concepts/ | 1 matrix |
+| GET | /api/chapters/stone-age/visuals/ | 25 visuals |
+| GET | /api/chapters/stone-age/exercises/ | 26 exercises |
+| GET | /api/questions/?chapter=stone-age | 46 PYQs |
+| GET | /api/questions/{id}/ | Full question detail |
+
+### Database Counts (17-Mar-2026)
+| Table | Count |
+|---|---|
+| content_state | 1 |
+| content_subject | 1 |
+| content_part | 1 |
+| content_unit | 2 |
+| content_chapter | 1 (Stone Age) |
+| content_topic | 7 |
+| content_subtopic | 25 |
+| content_fact | 160 |
+| content_site | 65 |
+| content_timeline_event | 29 |
+| content_glossary_term | 30 |
+| content_exam_intel_entry | 20 |
+| content_comparison_matrix | 1 |
+| content_visual | 25 |
+| content_exercise | 26 |
+| content_prelims_pyq | 1,178 |
+
+### Architecture (S11)
+```
+mypcs280226/
+├── manage.py
+├── mypcs_project/
+│   ├── settings.py          (DRF, CORS configured)
+│   └── urls.py              (admin/ + api/)
+├── content/
+│   ├── models.py            (27 models — v2 schema)
+│   ├── admin.py             (custom admin for all 27 models)
+│   ├── serializers.py       (13 serializers — taxonomy, content, PYQ, stats)
+│   ├── views.py             (ChapterViewSet, PrelimsViewSet, stats_view)
+│   ├── urls.py              (DRF router → /api/)
+│   ├── api_views.py         (OLD — superseded by views.py)
+│   ├── api_urls.py          (OLD — superseded by urls.py)
+│   ├── resources.py         (OLD — import-export resource)
+│   ├── management/commands/
+│   │   ├── upload_chapter.py     (NEW — XLSX 10-sheet parser)
+│   │   ├── upload_prelims.py     (NEW — PYQ XLSX parser)
+│   │   ├── import_prelims_pyq.py (OLD — superseded)
+│   │   └── load_subjects_units.py (OLD — superseded)
+│   └── migrations/
+│       └── 0001_initial.py  (fresh — 27 models, 30 tables)
+├── data/
+│   ├── chapters/            (3 XLSX files)
+│   └── PYQ/                 (1 XLSX file)
+├── tracker/                 (unchanged)
+├── docs/
+│   └── PROGRESS_LOG.md
+└── .claude/
+    └── CLAUDE.md
+```
+
+### Next Tasks
+| # | Task | Status |
+|---|---|---|
+| T92 | Upload Chalcolithic (Ch5) and Harappan (Ch6) chapters | Pending |
+| T93 | Build frontend chapter view pages | Pending |
+| T94 | Build Mains PYQ upload pipeline | Pending |
+| T95 | Deploy to Railway | Pending |
+| T96 | Clean up OLD files (api_views.py, api_urls.py, resources.py, old commands) | Pending |
