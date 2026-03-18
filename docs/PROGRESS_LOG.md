@@ -816,5 +816,83 @@ mypcs280226/
 | T92b | Upload Harappan (Ch6) | Pending |
 | T93 | Build frontend chapter view pages | Pending |
 | T94 | Build Mains PYQ upload pipeline | Pending |
-| T95 | Deploy to Railway | Pending |
+| T95 | Deploy to Railway | Done (S13) |
 | T96 | Clean up OLD files (api_views.py, api_urls.py, resources.py, old commands) | Pending |
+
+---
+
+## Session 13 — 18-Mar-2026 (Railway Deployment + Seeding)
+
+### Summary
+Deployed Django backend to Railway with full seed data. Fixed GitHub auto-deploy connection, built JSON fixture pipeline from XLSX files, resolved two fixture bugs (missing timestamps, State model has no timestamp fields). Backend is live and serving 1,822 objects via REST API.
+
+### Tasks Completed
+| # | Task | Status |
+|---|---|---|
+| T95 | Deploy backend to Railway (thorough-nurturing project) | Done |
+| T95a | Fix Railway GitHub App — installed on ankit-mypcs account, reconnected repo | Done |
+| T95b | Create gen_fixture.py — generates Django-compatible JSON fixture from 3 XLSX files | Done |
+| T95c | Create seed_if_empty management command — safe idempotent seeding on every deploy | Done |
+| T95d | Update railway.json — collectstatic + migrate + seed_if_empty + gunicorn | Done |
+| T95e | Fix seed.json — add created_at/updated_at timestamps (loaddata doesn't auto-populate auto_now_add) | Done |
+| T95f | Fix seed.json — exclude State model from timestamps (State has no timestamp fields) | Done |
+| T95g | Verify live API — /api/stats/ returns real counts (1,822 objects) | Done |
+| T95h | Update CLAUDE.md with Railway deployment info | Done |
+
+### Deployment Details
+- **Railway project**: thorough-nurturing (production environment)
+- **Live URL**: https://backend-production-a889.up.railway.app
+- **Region**: asia-southeast1-eqsg3a
+- **Builder**: Nixpacks (auto-detects Python/Django)
+- **Auto-deploy**: GitHub push to main → Railway builds + deploys automatically
+- **Start command**: `collectstatic --noinput && migrate && seed_if_empty && gunicorn`
+
+### Fixture Pipeline
+- **gen_fixture.py**: Reads 3 XLSX files → generates Django-compatible JSON fixture
+  - Input: HIS_StoneAge_Ch4.xlsx, HIS_Chalcolithic_Ch5.xlsx, UPPCS_PYQ_Ancient_History_v2.xlsx
+  - Output: data/seed.json (1,822 objects, ~2.0 MB)
+  - Handles: taxonomy, 10 content sheet types, PrelimsPYQ with fuzzy chapter matching
+  - Timestamps: Adds created_at/updated_at per model (skips State which has no timestamp fields)
+- **seed_if_empty command**: Loads seed.json ONLY if no chapters exist in DB (safe for repeated deploys)
+
+### Bugs Fixed
+| Bug | Root Cause | Fix |
+|---|---|---|
+| IntegrityError: null created_at | Django loaddata ignores auto_now_add fields | Added explicit timestamps to gen_fixture.py |
+| DeserializationError: State has no field 'created_at' | State model has no timestamp fields | Added MODELS_NO_TIMESTAMPS exclusion set |
+
+### Live API Verification (18-Mar-2026)
+| Endpoint | Response |
+|---|---|
+| /api/stats/ | chapters:2, topics:12, facts:274, sites:98, timeline_events:44, glossary_terms:47, visuals:38, exercises:43, prelims_pyqs:1178, prelims_complete:243 |
+
+### Files Created
+| File | Description |
+|---|---|
+| content/management/commands/seed_if_empty.py | Idempotent seeding command |
+| data/seed.json | Django fixture (1,822 objects) |
+| gen_fixture.py | XLSX → JSON fixture generator (not committed, project root) |
+
+### Files Modified
+| File | Change |
+|---|---|
+| railway.json | Added collectstatic + seed_if_empty to start command |
+| .claude/CLAUDE.md | Updated with Railway deployment info, seed_if_empty command, data files |
+
+### Commits
+| Hash | Message |
+|---|---|
+| c895a27 | add seed fixture and seed_if_empty command for Railway |
+| e8d71bb | fix: add created_at/updated_at timestamps to seed.json |
+| 00b8ffe | fix: exclude State model from timestamps in seed.json |
+| e6f9798 | docs: update CLAUDE.md — Railway deployment live with seeded data |
+
+### Next Tasks
+| # | Task | Status |
+|---|---|---|
+| T92b | Upload Harappan (Ch6) chapter | Pending |
+| T93 | Build frontend chapter view + question practice pages | Pending |
+| T97 | Deploy frontend to Vercel | Pending |
+| T94 | Build Mains PYQ upload pipeline | Pending |
+| T96 | Clean up OLD files (api_views.py, api_urls.py, resources.py, old commands) | Pending |
+| T98 | Delete old thorough-warmth Railway project (stale DB) | Pending |
