@@ -10,6 +10,20 @@ from content.models import (
 )
 
 
+# ── Subject ──────────────────────────────────
+
+class SubjectSerializer(serializers.ModelSerializer):
+    question_count = serializers.IntegerField(read_only=True)
+    chapter_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Subject
+        fields = [
+            'id', 'name', 'code', 'slug', 'icon',
+            'question_count', 'chapter_count',
+        ]
+
+
 # ── Taxonomy ─────────────────────────────────
 
 class SubTopicSerializer(serializers.ModelSerializer):
@@ -136,12 +150,15 @@ class ExerciseSerializer(serializers.ModelSerializer):
 class PrelimsListSerializer(serializers.ModelSerializer):
     chapter_name = serializers.CharField(source='chapter.name', default='', read_only=True)
     topic_name = serializers.CharField(source='topic.name', default='', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', default='', read_only=True)
 
     class Meta:
         model = PrelimsPYQ
         fields = [
-            'id', 'question_id', 'stem', 'year', 'exam_source',
-            'difficulty', 'chapter_name', 'topic_name',
+            'id', 'question_id', 'stem',
+            'option_a', 'option_b', 'option_c', 'option_d',
+            'year', 'exam_source', 'difficulty',
+            'subject_name', 'chapter_name', 'topic_name',
             'review_status', 'is_active',
         ]
 

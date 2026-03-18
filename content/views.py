@@ -1,17 +1,19 @@
 """
 content/views.py — DRF ViewSets for MYPCS API
 """
+from django.db import models
 from django.db.models import Count
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
 from content.models import (
-    Chapter, Fact, Site, TimelineEvent, GlossaryTerm,
+    Subject, Chapter, Fact, Site, TimelineEvent, GlossaryTerm,
     ExamIntelEntry, ComparisonMatrix, Visual, Exercise,
     PrelimsPYQ, Topic,
 )
 from content.serializers import (
+    SubjectSerializer,
     ChapterListSerializer, ChapterDetailSerializer,
     FactSerializer, SiteSerializer, TimelineSerializer,
     GlossarySerializer, ExamIntelSerializer, ConceptMatrixSerializer,
@@ -19,6 +21,23 @@ from content.serializers import (
     PrelimsListSerializer, PrelimsDetailSerializer,
     StatsSerializer,
 )
+
+
+class SubjectViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    /api/subjects/ → list with question_count and chapter_count
+    """
+    serializer_class = SubjectSerializer
+
+    def get_queryset(self):
+        return Subject.objects.filter(is_active=True).annotate(
+            question_count=Count('prelims_pyqs', distinct=True),
+            chapter_count=Count(
+                'parts__units__chapters',
+                filter=models.Q(parts__units__chapters__is_active=True),
+                distinct=True,
+            ),
+        )
 
 
 class ChapterViewSet(viewsets.ReadOnlyModelViewSet):
@@ -103,8 +122,10 @@ class ChapterViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PrelimsViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    /api/questions/         → list (filterable by chapter, year, difficulty)
-    /api/questions/{id}/    → detail with options + answer
+    /api/questions/                → list (filterable by chapter, year, difficulty)
+    /api/questions/{id}/           → detail with options + answer
+    /api/questions/random_set/     → random set of N questions
+    /api/questions/{id}/check_answer/ → submit answer, get marks
     """
 
     def get_queryset(self):
@@ -132,6 +153,44 @@ class PrelimsViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return PrelimsDetailSerializer
         return PrelimsListSerializer
+
+    @action(detail=False, methods=['get'], url_path='random_set')
+    def random_set(self, request):
+        """Return N random questions with complete options."""
+        count = int(request.query_params.get('count', 10))
+        count = min(count, 50)  # cap at 50
+
+        qs = PrelimsPYQ.objects.filter(
+            is_active=True,
+            review_status='draft',
+        ).exclude(
+            option_a='',
+        ).select_related('chapter', 'topic', 'subject')
+
+        # Filter by subject if provided
+        subject = request.query_params.get('subject')
+        if subject:
+            qs = qs.filter(subject_id=subject)
+
+        questions = qs.order_by('?')[:count]
+        return Response(PrelimsListSerializer(questions, many=True).data)
+
+    @action(detail=True, methods=['post'], url_path='check_answer')
+    def check_answer(self, request, pk=None):
+        """Submit an answer, return correctness and marks."""
+        question = self.get_object()
+        answer = request.data.get('answer', '').upper()
+
+        is_correct = (answer == question.correct_answer)
+        marks = 2.0 if is_correct else -0.66
+
+        return Response({
+            'is_correct': is_correct,
+            'marks': marks,
+            'your_answer': answer,
+            'correct_answer': question.correct_answer,
+            'question': PrelimsDetailSerializer(question).data,
+        })
 
 
 @api_view(['GET'])
