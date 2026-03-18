@@ -508,6 +508,9 @@ class Paper(models.Model):
         ('language', 'Language'),
     ]
 
+    exam = models.ForeignKey(Exam, on_delete=models.PROTECT,
+                              null=True, blank=True,
+                              related_name='papers')
     name = models.CharField(max_length=100)
     short_name = models.CharField(max_length=20, unique=True)
     slug = models.SlugField(unique=True)
@@ -619,6 +622,9 @@ class PrelimsPYQ(models.Model):
     common_mistake = models.TextField(blank=True, default='')
     exam_tip = models.TextField(blank=True, default='')
 
+    exam = models.ForeignKey(Exam, on_delete=models.PROTECT,
+                              null=True, blank=True,
+                              related_name='prelims_pyqs')
     exam_session = models.ForeignKey(ExamSession, on_delete=models.PROTECT,
                                      null=True, blank=True,
                                      related_name='prelims_questions')

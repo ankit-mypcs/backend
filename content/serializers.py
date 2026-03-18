@@ -6,8 +6,66 @@ from content.models import (
     Subject, Part, Unit, Chapter, Topic, SubTopic,
     Fact, Site, TimelineEvent, GlossaryTerm,
     ExamIntelEntry, ComparisonMatrix, Visual, Exercise,
-    PrelimsPYQ, State,
+    PrelimsPYQ, State, Exam, ExamSession, Paper,
 )
+
+
+# ── Exam ────────────────────────────────────
+
+class ExamListSerializer(serializers.ModelSerializer):
+    state_name = serializers.CharField(source='state.name', default='', read_only=True)
+    state_code = serializers.CharField(source='state.code', default='', read_only=True)
+    pyq_count = serializers.IntegerField(read_only=True)
+    session_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Exam
+        fields = [
+            'id', 'name', 'short_name', 'slug',
+            'state_name', 'state_code', 'description',
+            'is_target_exam', 'is_active',
+            'pyq_count', 'session_count',
+        ]
+
+
+class PaperSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Paper
+        fields = [
+            'id', 'name', 'short_name', 'slug', 'exam_stage',
+            'total_marks', 'total_questions', 'duration_minutes',
+            'paper_type', 'is_qualifying', 'negative_marking',
+        ]
+
+
+class ExamSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExamSession
+        fields = [
+            'id', 'year', 'prelims_date', 'mains_date',
+            'total_questions_prelims', 'positive_marks_prelims',
+            'negative_marks_prelims',
+            'cutoff_prelims_general', 'cutoff_prelims_obc',
+            'cutoff_prelims_sc', 'cutoff_prelims_st',
+            'students_applied', 'students_final_selected',
+            'posts_advertised',
+        ]
+
+
+class ExamDetailSerializer(serializers.ModelSerializer):
+    state_name = serializers.CharField(source='state.name', default='', read_only=True)
+    state_code = serializers.CharField(source='state.code', default='', read_only=True)
+    papers = PaperSerializer(many=True, read_only=True)
+    sessions = ExamSessionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Exam
+        fields = [
+            'id', 'name', 'short_name', 'slug',
+            'state_name', 'state_code', 'description',
+            'is_target_exam', 'is_active',
+            'papers', 'sessions',
+        ]
 
 
 # ── Subject ──────────────────────────────────
@@ -151,13 +209,15 @@ class PrelimsListSerializer(serializers.ModelSerializer):
     chapter_name = serializers.CharField(source='chapter.name', default='', read_only=True)
     topic_name = serializers.CharField(source='topic.name', default='', read_only=True)
     subject_name = serializers.CharField(source='subject.name', default='', read_only=True)
+    exam_name = serializers.CharField(source='exam.short_name', default='', read_only=True)
+    exam_slug = serializers.CharField(source='exam.slug', default='', read_only=True)
 
     class Meta:
         model = PrelimsPYQ
         fields = [
             'id', 'question_id', 'stem',
             'option_a', 'option_b', 'option_c', 'option_d',
-            'year', 'exam_source', 'difficulty',
+            'year', 'exam_source', 'exam_name', 'exam_slug', 'difficulty',
             'subject_name', 'chapter_name', 'topic_name',
             'review_status', 'is_active',
         ]

@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from content.models import (
     Subject, Chapter, Fact, Site, TimelineEvent, GlossaryTerm,
     ExamIntelEntry, ComparisonMatrix, Visual, Exercise,
-    PrelimsPYQ, Topic,
+    PrelimsPYQ, Topic, Exam,
 )
 from content.serializers import (
     SubjectSerializer,
@@ -20,7 +20,30 @@ from content.serializers import (
     VisualSerializer, ExerciseSerializer,
     PrelimsListSerializer, PrelimsDetailSerializer,
     StatsSerializer,
+    ExamListSerializer, ExamDetailSerializer,
 )
+
+
+class ExamViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    /api/exams/           → list (with pyq_count, session_count)
+    /api/exams/{slug}/    → detail (with papers, sessions)
+    """
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        qs = Exam.objects.filter(is_active=True).select_related('state')
+        if self.action == 'list':
+            qs = qs.annotate(
+                pyq_count=Count('prelims_pyqs', distinct=True),
+                session_count=Count('sessions', distinct=True),
+            )
+        return qs
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return ExamDetailSerializer
+        return ExamListSerializer
 
 
 class SubjectViewSet(viewsets.ReadOnlyModelViewSet):
@@ -54,9 +77,9 @@ class ChapterViewSet(viewsets.ReadOnlyModelViewSet):
         )
         if self.action == 'list':
             qs = qs.annotate(
-                fact_count=Count('facts'),
-                site_count=Count('sites'),
-                pyq_count=Count('prelims_pyqs'),
+                fact_count=Count('facts', distinct=True),
+                site_count=Count('sites', distinct=True),
+                pyq_count=Count('prelims_pyqs', distinct=True),
             )
         return qs
 
@@ -131,7 +154,14 @@ class PrelimsViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         qs = PrelimsPYQ.objects.filter(
             is_active=True,
-        ).select_related('chapter', 'topic', 'subject')
+        ).select_related('chapter', 'topic', 'subject', 'exam')
+
+        # Exam filter — by slug or exam_source string
+        exam = self.request.query_params.get('exam')
+        if exam:
+            qs = qs.filter(
+                models.Q(exam__slug=exam) | models.Q(exam_source__iexact=exam)
+            )
 
         chapter = self.request.query_params.get('chapter')
         if chapter:
@@ -142,6 +172,16 @@ class PrelimsViewSet(viewsets.ReadOnlyModelViewSet):
         difficulty = self.request.query_params.get('difficulty')
         if difficulty:
             qs = qs.filter(difficulty=difficulty)
+
+        # Topic filter
+        topic = self.request.query_params.get('topic')
+        if topic:
+            qs = qs.filter(topic__slug=topic)
+
+        # Bloom's level filter
+        blooms = self.request.query_params.get('blooms')
+        if blooms:
+            qs = qs.filter(blooms_level=blooms)
 
         status_filter = self.request.query_params.get('status', 'draft')
         if status_filter != 'all':
@@ -165,12 +205,24 @@ class PrelimsViewSet(viewsets.ReadOnlyModelViewSet):
             review_status='draft',
         ).exclude(
             option_a='',
-        ).select_related('chapter', 'topic', 'subject')
+        ).select_related('chapter', 'topic', 'subject', 'exam')
 
-        # Filter by subject if provided
+        # Filter by exam
+        exam = request.query_params.get('exam')
+        if exam:
+            qs = qs.filter(
+                models.Q(exam__slug=exam) | models.Q(exam_source__iexact=exam)
+            )
+
+        # Filter by subject
         subject = request.query_params.get('subject')
         if subject:
             qs = qs.filter(subject_id=subject)
+
+        # Filter by chapter
+        chapter = request.query_params.get('chapter')
+        if chapter:
+            qs = qs.filter(chapter__slug=chapter)
 
         questions = qs.order_by('?')[:count]
         return Response(PrelimsListSerializer(questions, many=True).data)
